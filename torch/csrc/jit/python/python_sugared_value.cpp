@@ -252,7 +252,9 @@ SugaredValuePtr ModuleValue::getitem(
       throw ErrorReport(loc) << "Key Error, " << idx_str;
     }
     throw ErrorReport(loc)
-        << "Unable to extract string literal index. ModuleDict indexing is only supported with string literals.";
+        << "Unable to extract string literal index. "
+        << "ModuleDict indexing is only supported with string literals. "
+        << "Enumeration of ModuleDict is supported, e.g. 'for k, v in self.items(): ...'";
   }
   throw ErrorReport(loc)
       << "Only ModuleList, Sequential, and ModuleDict modules are subscriptable";
@@ -686,8 +688,8 @@ TypePtr registerNamedTuple(const py::object& obj, const SourceRange& loc) {
     }
   }
 
-  py::object props =
-      py::module::import("torch.jit").attr("_get_named_tuple_properties")(obj);
+  py::object props = py::module::import("torch._jit_internal")
+                         .attr("_get_named_tuple_properties")(obj);
   std::string unqualName;
   std::vector<std::string> fields;
   std::vector<TypePtr> annotations;
@@ -788,7 +790,7 @@ std::shared_ptr<SugaredValue> toSugaredValue(
   }
 
   py::object builtin_name =
-      py::module::import("torch.jit").attr("_find_builtin")(obj);
+      py::module::import("torch.jit._builtins").attr("_find_builtin")(obj);
   if (!builtin_name.is_none()) {
     return std::make_shared<BuiltinFunction>(
         Symbol::fromQualString(py::str(builtin_name)), c10::nullopt);
@@ -801,8 +803,8 @@ std::shared_ptr<SugaredValue> toSugaredValue(
     }
   }
 
-  py::object dispatched_fn =
-      py::module::import("torch.jit").attr("_try_get_dispatched_fn")(obj);
+  py::object dispatched_fn = py::module::import("torch._jit_internal")
+                                 .attr("_try_get_dispatched_fn")(obj);
   if (!dispatched_fn.is_none()) {
     return std::make_shared<BooleanDispatchValue>(std::move(dispatched_fn));
   }
